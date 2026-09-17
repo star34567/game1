@@ -1,0 +1,264 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>⭕ XO เดิมพันเหรียญ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#030713;color:#e6f4ff;display:grid;place-items:center;min-height:100vh;padding:10px}
+.app{width:100%;max-width:380px;background:#08142a;border:1px solid #16305a;border-radius:20px;padding:14px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.bar h1{flex:1;font-size:16px;color:#f472b6}
+.coin{background:#3a2c07;color:#fbbf24;border:1px solid #6b5210;padding:6px 12px;border-radius:99px;font-weight:800;font-size:14px}
+.pg{display:none}.pg.on{display:block}
+.card{background:#050f22;border:1px solid #16305a;border-radius:14px;padding:16px;text-align:center}
+.big{font-size:30px;font-weight:900;color:#fbbf24}
+.mut{font-size:12px;color:#8fa9c8;line-height:1.7}
+button{border:0;cursor:pointer;font-family:inherit}
+.btn{width:100%;padding:13px;border-radius:13px;font-size:15px;font-weight:800;color:#fff;background:#db2777;margin-top:8px}
+.btn.g{background:#16a34a}.btn.o{background:#d97706}.btn.d{background:#122a4a;color:#cbd5e1}
+.btn.f{background:#0891b2}
+.btn:disabled{background:#122a4a;color:#5b7398}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hud{display:flex;gap:6px;margin:10px 0}
+.hud div{flex:1;background:#050f22;border:1px solid #16305a;border-radius:11px;padding:7px;text-align:center;font-size:10px;color:#8fa9c8}
+.hud b{display:block;font-size:15px;color:#e6f4ff}
+.item{display:flex;gap:10px;align-items:center;background:#050f22;border:1px solid #16305a;border-radius:13px;padding:10px;margin-bottom:8px}
+.item .ic{font-size:22px}.item .tx{flex:1}.item b{font-size:13px}.item p{font-size:11px;color:#8fa9c8}
+.item button{padding:9px 12px;border-radius:10px;background:#f59e0b;color:#2b1a00;font-weight:800;font-size:12px}
+.item button:disabled{background:#122a4a;color:#5b7398}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0c2545;border:1px solid #1d4373;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}
+.toast.on{opacity:1}
+#bd{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+#bd button{aspect-ratio:1;border-radius:14px;background:#0b1e3d;border:1px solid #1d4373;font-size:38px;font-weight:900;display:grid;place-items:center;padding:0;line-height:1}
+#bd button.w{background:#15803d;border-color:#22c55e}
+#bd button.lo{background:#7f1d1d;border-color:#ef4444}
+.bets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.bets button{padding:11px 2px;border-radius:11px;background:#122a4a;color:#e6f4ff;font-weight:800;font-size:12px;border:1px solid #1d4373}
+.bets button.sel{background:#db2777;border-color:#f472b6}
+.bets button.free{background:#0e4f5f;border-color:#0891b2}
+.bets button.free.sel{background:#0891b2;border-color:#22d3ee}
+.bets button:disabled{opacity:.3}
+.note{background:#0c2545;border:1px solid #1d4373;border-radius:12px;padding:9px 12px;font-size:11.5px;color:#a5c4e4;margin-top:8px;line-height:1.6}
+</style></head><body>
+<div class="app">
+<div class="bar"><h1>⭕ XO เดิมพันเหรียญ</h1><div class="coin">🪙 <span id="cn">0</span></div></div>
+
+<div id="menu" class="pg on">
+ <div class="card"><div style="font-size:52px">⭕❌</div><div class="big" id="bs">0</div>
+ <div class="mut">ชนะติดต่อกันสูงสุด</div></div>
+
+ <div class="note" id="tip">💡 เลือก <b>ฝึกซ้อม</b> เพื่อเล่นฟรีและสะสมเหรียญ — เล่นได้เสมอแม้เหรียญเป็น 0</div>
+
+ <div class="mut" style="margin-top:10px;text-align:center">เลือกเดิมพัน (เหรียญในเกมเท่านั้น)</div>
+ <div class="bets" id="bets"></div>
+
+ <button class="btn f" id="freeb" onclick="claimFree()">💸 รับเหรียญช่วยเหลือ</button>
+ <button class="btn g" onclick="start(0)">▶ เล่นกับ AI</button>
+ <button class="btn" onclick="start(1)">👥 เล่น 2 คน (ไม่เดิมพัน)</button>
+ <button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+</div>
+
+<div id="shop" class="pg"><div id="ups"></div><button class="btn d" onclick="show('menu')">← กลับ</button></div>
+
+<div id="game" class="pg">
+ <div class="card"><div class="mut" id="gb">โหมดฝึกซ้อม</div>
+ <div style="font-size:18px;font-weight:800;margin-top:4px" id="turn">ตาคุณ ❌</div></div>
+ <div id="bd"></div>
+ <div class="hud"><div>ชนะ<b id="hw">0</b></div><div>แพ้<b id="hl">0</b></div>
+ <div>เสมอ<b id="hd">0</b></div><div>สตรีค<b id="hk">0</b></div></div>
+ <div class="row"><button class="btn o" id="ub" onclick="useUndo()">↩️ ย้อนตา (0)</button>
+ <button class="btn d" onclick="quit()">🏠 ออก</button></div>
+</div>
+
+<div id="over" class="pg">
+ <div class="card"><div style="font-size:44px" id="oe">🎉</div><div class="big" id="os"></div>
+ <div class="mut" id="ob"></div></div>
+ <button class="btn g" onclick="replay()">🔄 เล่นตาใหม่</button>
+ <div class="row"><button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+ <button class="btn d" onclick="show('menu')">🏠 เมนู</button></div>
+</div>
+</div><div class="toast" id="tst"></div>
+<script>
+const K='xox_',$=i=>document.getElementById(i);
+const LD=(k,d)=>{try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const ST=(k,v)=>{try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}};
+
+/* ── ทุนตั้งต้นสำหรับผู้เล่นใหม่ (กันเกมตัน) ── */
+let coin=LD('coin',null);
+if(coin===null||typeof coin!=='number'||coin<0){coin=100;ST('coin',coin)}
+
+let up=LD('up',{bt:0,mu:0,lk:0,ud:0}),best=LD('best',0);
+let rec=LD('rec',{w:0,l:0,d:0}),streak=LD('streak',0);
+
+let AC;function beep(f,d,t,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+ if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();
+ o.type=t||'square';o.frequency.value=f;g.gain.setValueAtTime(v||.08,AC.currentTime);
+ g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+ o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function paint(){$('cn').textContent=coin;$('bs').textContent=best;
+ document.querySelectorAll('[data-c]').forEach(b=>b.disabled=coin<+b.dataset.c)}
+function toast(m){const t=$('tst');t.textContent=m;t.classList.add('on');
+ clearTimeout(t._);t._=setTimeout(()=>t.classList.remove('on'),1500)}
+function show(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+ $(id).classList.add('on');paint();
+ if(id=='menu'){renderBets();updFree()}}
+
+const UPS=[{k:'bt',i:'💳',n:'วงเงินเดิมพัน',d:'ปลดล็อกเดิมพันขั้นสูงขึ้น',max:3,c:l=>200+l*260},
+{k:'mu',i:'💰',n:'โบนัสเงินรางวัล',d:'เงินรางวัลเมื่อชนะ +20% ต่อระดับ',max:4,c:l=>180+l*180},
+{k:'lk',i:'🍀',n:'เสน่ห์นำโชค',d:'AI เผลอบ่อยขึ้น 15% ต่อระดับ',max:3,c:l=>240+l*260},
+{k:'ud',i:'↩️',n:'ตั๋วย้อนตา',d:'ย้อนการเดินล่าสุด 1 ครั้ง',a:1,c:()=>90}];
+function openShop(){show('shop');renderShop()}
+function renderShop(){const b=$('ups');b.innerHTML='';
+ UPS.forEach(o=>{const l=up[o.k]|0,mx=!o.a&&l>=o.max,c=o.c(l);
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div class="ic">'+o.i+'</div><div class="tx"><b>'+o.n+
+   ' <span style="color:#fbbf24">'+(o.a?'x'+l:'Lv'+l+'/'+o.max)+'</span></b><p>'+o.d+'</p></div>';
+  const t=document.createElement('button');t.textContent=mx?'MAX':'🪙 '+c;
+  if(mx)t.disabled=true;else{t.dataset.c=c;t.onclick=()=>{
+   if(coin<c){beep(150,.2,'sawtooth');return toast('เหรียญไม่พอ')}
+   coin-=c;up[o.k]=l+1;ST('coin',coin);ST('up',up);beep(900,.12,'triangle');
+   toast(o.a?'ซื้อแล้ว!':'อัปเป็น Lv'+(l+1));renderShop()}}
+  d.appendChild(t);b.appendChild(d)});paint()}
+function addCoin(n){if(n<=0)return;coin+=n;ST('coin',coin);paint()}
+
+/* ── ระบบเหรียญช่วยเหลือ กันผู้เล่นตัน ── */
+const FREE_AMT=60,FREE_CD=90000,FREE_MIN=25;
+function freeLeft(){return Math.max(0,FREE_CD-(Date.now()-LD('ft',0)))}
+function updFree(){const b=$('freeb');
+ if(coin>=FREE_MIN){b.disabled=true;b.textContent='💸 รับเหรียญช่วยเหลือ (เหรียญยังพอ)';return}
+ const l=freeLeft();
+ if(l>0){b.disabled=true;b.textContent='💸 รออีก '+Math.ceil(l/1000)+' วินาที'}
+ else{b.disabled=false;b.textContent='💸 รับเหรียญช่วยเหลือ +'+FREE_AMT+' 🪙'}}
+setInterval(()=>{if($('menu').classList.contains('on'))updFree()},1000);
+function claimFree(){
+ if(coin>=FREE_MIN)return toast('เหรียญยังพอเล่นอยู่');
+ if(freeLeft()>0)return toast('ยังอยู่ในช่วงรอ');
+ ST('ft',Date.now());addCoin(FREE_AMT);beep(1050,.18,'triangle');
+ toast('💸 ได้รับ '+FREE_AMT+' เหรียญช่วยเหลือ');renderBets();updFree()}
+
+/* ── ระบบเดิมพัน: 0 = ฝึกซ้อม เล่นได้เสมอ ── */
+const BETS=[0,10,25,50,100,200,500];
+let bet=LD('bet',0),mode=0,bd=[],turn=0,over_=false,busy=false,hist=[],CELLS=[];
+function maxBet(){return BETS[Math.min(BETS.length-1,3+up.bt)]}
+function renderBets(){
+ if(bet>0&&(bet>coin||bet>maxBet())){
+  let ok=0;BETS.forEach(v=>{if(v<=coin&&v<=maxBet())ok=v});
+  if(ok!==bet){bet=ok;ST('bet',bet)}}
+ const w=$('bets');w.innerHTML='';
+ BETS.forEach(v=>{const b=document.createElement('button');
+  b.textContent=v===0?'ฝึกซ้อม':'🪙'+v;
+  let cls=v===0?'free':'';
+  if(v>maxBet()){b.disabled=true;b.title='ต้องอัปเกรดวงเงิน'}
+  else if(v>coin){b.disabled=true}
+  if(v===bet)cls+=' sel';
+  b.className=cls.trim();
+  b.onclick=()=>{bet=v;ST('bet',bet);beep(700,.05,'triangle');renderBets()};
+  w.appendChild(b)});
+ $('tip').innerHTML = coin<10
+  ? '⚠️ เหรียญเหลือน้อย — ใช้ <b>โหมดฝึกซ้อม</b> (ชนะ +6🪙) หรือกดรับเหรียญช่วยเหลือด้านล่างได้เลย'
+  : '💡 <b>ฝึกซ้อม</b> เล่นฟรีได้ตลอด · เดิมพันชนะได้ <b>2 เท่า</b> · เสมอคืนเงินเต็ม';}
+
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function winner(b){for(let i=0;i<8;i++){const L=LINES[i];
+ if(b[L[0]]&&b[L[0]]==b[L[1]]&&b[L[0]]==b[L[2]])return{p:b[L[0]],L:L}}
+ return b.indexOf(0)<0?{p:'d'}:null}
+
+/* สร้างกระดานครั้งเดียว แล้วอัปเดตเฉพาะช่องที่เปลี่ยน */
+(function initBoard(){const w=$('bd');
+ for(let i=0;i<9;i++){const b=document.createElement('button');
+  b.onclick=()=>tap(i);CELLS.push(b);w.appendChild(b)}})();
+function drawBoard(win,lose){
+ for(let i=0;i<9;i++){const b=CELLS[i];
+  const t=bd[i]==1?'❌':bd[i]==2?'⭕':'';
+  if(b.textContent!==t)b.textContent=t;
+  const c=win&&win.indexOf(i)>=0?(lose?'lo':'w'):'';
+  if(b.className!==c)b.className=c}}
+
+function start(m){
+ mode=m;
+ if(m==0&&bet>0&&coin<bet){
+  let ok=0;BETS.forEach(v=>{if(v<=coin&&v<=maxBet())ok=v});
+  bet=ok;ST('bet',bet);
+  toast(ok?'ปรับเดิมพันเป็น '+ok+' 🪙':'เหรียญไม่พอ — เข้าโหมดฝึกซ้อม')}
+ if(m==0&&bet>0){coin-=bet;ST('coin',coin)}
+ beep(600,.1,'triangle');
+ bd=[0,0,0,0,0,0,0,0,0];turn=0;over_=false;busy=false;hist=[];
+ $('gb').innerHTML = m==1 ? '👥 โหมด 2 คน (ไม่เดิมพัน)'
+  : bet>0 ? 'เดิมพัน <b style="color:#fbbf24">'+bet+'</b> 🪙 · ชนะรับ <b style="color:#4ade80">'+prize()+'</b> 🪙'
+          : '🎓 โหมดฝึกซ้อม · ชนะรับ <b style="color:#4ade80">6</b> 🪙 ฟรี';
+ show('game');drawBoard();hud()}
+function replay(){start(mode)}
+function prize(){return Math.round(bet*2*(1+up.mu*.2))+streak*5}
+function quit(){
+ if(!over_&&mode==0&&bet>0){addCoin(bet);toast('คืนเงินเดิมพัน '+bet+' 🪙')}
+ over_=true;save();show('menu')}
+function hud(){$('hw').textContent=rec.w;$('hl').textContent=rec.l;$('hd').textContent=rec.d;
+ $('hk').textContent=streak;$('ub').textContent='↩️ ย้อนตา ('+(up.ud|0)+')';
+ $('turn').textContent=over_?'จบตา'
+  :(mode==1?(turn==0?'ตาผู้เล่น 1 ❌':'ตาผู้เล่น 2 ⭕')
+           :(turn==0?'ตาคุณ ❌':'AI กำลังคิด... ⭕'))}
+
+function tap(i){if(over_||busy||bd[i])return;
+ if(mode==0&&turn!=0)return;
+ place(i,turn==0?1:2);
+ if(mode==1){turn=1-turn;hud();return}
+ if(check())return;
+ turn=1;busy=true;hud();setTimeout(()=>{ai();busy=false},380)}
+function place(i,p){bd[i]=p;hist.push(i);beep(p==1?820:520,.07,'triangle');drawBoard()}
+function ai(){if(over_)return;
+ const em=[];for(let i=0;i<9;i++)if(!bd[i])em.push(i);
+ if(!em.length)return;
+ let mv=-1;
+ if(Math.random()>(.18+up.lk*.15)){
+  mv=find(2);                                  /* ชนะทันทีถ้าทำได้ */
+  if(mv<0)mv=find(1);                          /* บล็อกผู้เล่น */
+  if(mv<0&&!bd[4])mv=4;                        /* ยึดกลาง */
+  if(mv<0){const cn=[0,2,6,8].filter(i=>!bd[i]);
+   if(cn.length&&Math.random()<.75)mv=cn[Math.random()*cn.length|0]}}
+ if(mv<0)mv=em[Math.random()*em.length|0];
+ place(mv,2);turn=0;check();hud()}
+function find(p){for(let i=0;i<8;i++){const L=LINES[i];
+ let cnt=0,slot=-1;
+ for(let j=0;j<3;j++){const v=bd[L[j]];
+  if(v==p)cnt++;else if(v==0)slot=L[j];else{cnt=-9;break}}
+ if(cnt==2&&slot>=0)return slot}
+ return -1}
+function check(){const r=winner(bd);if(!r)return false;
+ over_=true;busy=true;
+ drawBoard(r.L||[],r.p==2);
+ setTimeout(()=>finish(r),520);return true}
+
+function finish(r){let e='🤝',t='เสมอ',s='';
+ if(r.p=='d'){rec.d++;streak=0;
+  if(mode==0&&bet>0){addCoin(bet);s='คืนเดิมพัน '+bet+' 🪙'}
+  else if(mode==0){addCoin(1);s='ฝึกซ้อม +1 🪙'}
+  beep(400,.2,'triangle')}
+ else if(r.p==1){rec.w++;streak++;e='🎉';t='คุณชนะ!';
+  if(mode==0){
+   const pz=bet>0?prize():6;
+   addCoin(pz);s='ได้รับ '+pz+' 🪙'+(bet>0?'':' (ฝึกซ้อม)')}
+  if(streak>best){best=streak;ST('best',best);s+=' 🏆 สตรีคใหม่!'}
+  beep(950,.18,'triangle')}
+ else{rec.l++;streak=0;e='😢';t='คุณแพ้';
+  if(mode==0)s=bet>0?'เสียเดิมพัน '+bet+' 🪙':'ฝึกซ้อม ไม่เสียเหรียญ';
+  beep(150,.35,'sawtooth')}
+ if(mode==1){t=r.p=='d'?'เสมอ':(r.p==1?'ผู้เล่น 1 ชนะ ❌':'ผู้เล่น 2 ชนะ ⭕');
+  e=r.p=='d'?'🤝':'🎉';s='โหมด 2 คน ไม่มีเดิมพัน'}
+ ST('rec',rec);ST('streak',streak);
+ $('oe').textContent=e;$('os').textContent=t;
+ $('ob').textContent=s+' · สตรีค '+streak+' · สูงสุด '+best;
+ save();show('over')}
+
+function useUndo(){
+ if(over_)return toast('ตานี้จบแล้ว');
+ if(mode==1)return toast('ใช้ได้เฉพาะโหมด AI');
+ if(busy)return toast('รอ AI เดินก่อน');
+ if(hist.length<2)return toast('ยังไม่มีตาให้ย้อน');
+ if((up.ud|0)<=0){beep(150,.2,'sawtooth');return toast('ไม่มีตั๋วย้อนตา')}
+ up.ud--;ST('up',up);
+ bd[hist.pop()]=0;bd[hist.pop()]=0;
+ turn=0;beep(600,.12,'triangle');drawBoard();hud();toast('↩️ ย้อนตาแล้ว')}
+
+function save(){ST('coin',coin);ST('up',up);ST('best',best);ST('rec',rec);ST('streak',streak);ST('bet',bet)}
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+addEventListener('beforeunload',save);
+renderBets();updFree();paint();
+</script></body></html>

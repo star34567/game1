@@ -1,0 +1,196 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>🧠 ควิซชิงเหรียญ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#030713;color:#e6f4ff;display:grid;place-items:center;min-height:100vh;padding:10px}
+.app{width:100%;max-width:380px;background:#08142a;border:1px solid #16305a;border-radius:20px;padding:14px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.bar h1{flex:1;font-size:16px;color:#a78bfa}
+.coin{background:#3a2c07;color:#fbbf24;border:1px solid #6b5210;padding:6px 12px;border-radius:99px;font-weight:800;font-size:14px}
+.pg{display:none}.pg.on{display:block}
+.card{background:#050f22;border:1px solid #16305a;border-radius:14px;padding:16px;text-align:center}
+.big{font-size:30px;font-weight:900;color:#fbbf24}
+.mut{font-size:12px;color:#8fa9c8;line-height:1.7}
+button{border:0;cursor:pointer;font-family:inherit}
+.btn{width:100%;padding:13px;border-radius:13px;font-size:15px;font-weight:800;color:#fff;background:#7c3aed;margin-top:8px}
+.btn.g{background:#16a34a}.btn.o{background:#d97706}.btn.d{background:#122a4a;color:#cbd5e1}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hud{display:flex;gap:6px;margin:10px 0}
+.hud div{flex:1;background:#050f22;border:1px solid #16305a;border-radius:11px;padding:7px;text-align:center;font-size:10px;color:#8fa9c8}
+.hud b{display:block;font-size:15px;color:#e6f4ff}
+.item{display:flex;gap:10px;align-items:center;background:#050f22;border:1px solid #16305a;border-radius:13px;padding:10px;margin-bottom:8px}
+.item .ic{font-size:22px}.item .tx{flex:1}.item b{font-size:13px}.item p{font-size:11px;color:#8fa9c8}
+.item button{padding:9px 12px;border-radius:10px;background:#f59e0b;color:#2b1a00;font-weight:800;font-size:12px}
+.item button:disabled{background:#122a4a;color:#5b7398}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0c2545;border:1px solid #1d4373;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}
+.toast.on{opacity:1}
+#qt{font-size:17px;font-weight:800;line-height:1.5;min-height:60px;display:flex;align-items:center;justify-content:center}
+.ch{width:100%;padding:13px;border-radius:12px;background:#122a4a;color:#e6f4ff;font-size:14px;font-weight:700;margin-top:8px;text-align:left;border:1px solid #1d4373}
+.ch.ok{background:#15803d;border-color:#22c55e}.ch.no{background:#991b1b;border-color:#ef4444}
+.ch:disabled{opacity:.45}
+.tb{height:9px;background:#122a4a;border-radius:9px;overflow:hidden;margin-top:10px}
+.tb i{display:block;height:100%;background:#a78bfa;width:100%;transition:width .1s linear}
+</style></head><body>
+<div class="app">
+<div class="bar"><h1>🧠 ควิซชิงเหรียญ</h1><div class="coin">🪙 <span id="cn">0</span></div></div>
+
+<div id="menu" class="pg on">
+ <div class="card"><div style="font-size:52px">🧠</div><div class="big" id="bs">0</div>
+ <div class="mut">ตอบถูกติดต่อกันสูงสุด</div></div>
+ <p class="mut" style="margin-top:10px">เลือกหมวด · ตอบผิดหรือหมดเวลา = จบเกม</p>
+ <div id="cats"></div>
+ <button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+</div>
+
+<div id="shop" class="pg"><div id="ups"></div><button class="btn d" onclick="show('menu')">← กลับ</button></div>
+
+<div id="game" class="pg">
+ <div class="card"><div class="mut" id="qc"></div><div id="qt"></div></div>
+ <div class="tb"><i id="tbar"></i></div>
+ <div id="chs"></div>
+ <div class="hud"><div>ตอบถูก<b id="hs">0</b></div><div>เหรียญ<b id="hg">0</b></div>
+ <div>คอมโบ<b id="hc">0</b></div></div>
+ <div class="row"><button class="btn o" id="fb" onclick="useFifty()">✂️ 50:50 (0)</button>
+ <button class="btn d" onclick="quit()">🏠 ออก</button></div>
+</div>
+
+<div id="over" class="pg">
+ <div class="card"><div style="font-size:44px">📕</div><div class="big" id="os">0</div>
+ <div class="mut" id="ob"></div><div style="margin-top:8px;color:#fbbf24;font-weight:800" id="oc"></div></div>
+ <button class="btn g" onclick="start(cat)">🔄 เล่นอีกครั้ง</button>
+ <div class="row"><button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+ <button class="btn d" onclick="show('menu')">🏠 เมนู</button></div>
+</div>
+</div><div class="toast" id="tst"></div>
+<script>
+const K='qiz_',$=i=>document.getElementById(i);
+const LD=(k,d)=>{try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const ST=(k,v)=>{try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}};
+let coin=LD('coin',0),up=LD('up',{tm:0,mu:0,ff:0,rv:0}),best=LD('best',0);
+let AC;function beep(f,d,t,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+ if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();
+ o.type=t||'square';o.frequency.value=f;g.gain.setValueAtTime(v||.08,AC.currentTime);
+ g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+ o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function paint(){$('cn').textContent=coin;$('bs').textContent=best;
+ document.querySelectorAll('[data-c]').forEach(b=>b.disabled=coin<+b.dataset.c)}
+function toast(m){const t=$('tst');t.textContent=m;t.classList.add('on');
+ clearTimeout(t._);t._=setTimeout(()=>t.classList.remove('on'),1400)}
+function show(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));$(id).classList.add('on');paint()}
+const UPS=[{k:'tm',i:'⏱️',n:'เวลาต่อข้อ',d:'+2 วินาทีต่อระดับ',max:4,c:l=>130+l*140},
+{k:'mu',i:'💰',n:'ตัวคูณเหรียญ',d:'รับเหรียญ +25% ต่อระดับ',max:4,c:l=>150+l*140},
+{k:'ff',i:'✂️',n:'ตัวช่วย 50:50',d:'ตัดช้อยส์ผิดทิ้ง 2 ข้อ',a:1,c:()=>80},
+{k:'rv',i:'💖',n:'ชีวิตสำรอง',d:'ตอบผิดได้ 1 ครั้งโดยไม่จบเกม',a:1,c:()=>150}];
+function openShop(){show('shop');renderShop()}
+function renderShop(){const b=$('ups');b.innerHTML='';
+ UPS.forEach(o=>{const l=up[o.k]|0,mx=!o.a&&l>=o.max,c=o.c(l);
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div class="ic">'+o.i+'</div><div class="tx"><b>'+o.n+
+   ' <span style="color:#fbbf24">'+(o.a?'x'+l:'Lv'+l+'/'+o.max)+'</span></b><p>'+o.d+'</p></div>';
+  const t=document.createElement('button');t.textContent=mx?'MAX':'🪙 '+c;
+  if(mx)t.disabled=true;else{t.dataset.c=c;t.onclick=()=>{
+   if(coin<c){beep(150,.2,'sawtooth');return toast('เหรียญไม่พอ')}
+   coin-=c;up[o.k]=l+1;ST('coin',coin);ST('up',up);beep(900,.12,'triangle');
+   toast(o.a?'ซื้อแล้ว!':'อัปเป็น Lv'+(l+1));renderShop()}}
+  d.appendChild(t);b.appendChild(d)});paint()}
+function addCoin(n){n=Math.round(n*(1+up.mu*.25));if(n<=0)return;coin+=n;gain+=n;ST('coin',coin);paint()}
+
+const QB={
+'🧠 ทั่วไป':[['ปัจจุบันประเทศไทยมีกี่จังหวัด',['76','77','78','75'],1],
+['1 ปีมีประมาณกี่สัปดาห์',['48','50','52','54'],2],
+['เลขโรมัน X มีค่าเท่าใด',['5','10','50','100'],1],
+['ผลไม้ที่ถูกเรียกว่า "ราชาผลไม้"',['มังคุด','ทุเรียน','เงาะ','ลำไย'],1],
+['7 × 8 เท่ากับเท่าไร',['54','56','48','64'],1],
+['ธงชาติไทยมีกี่สี',['2','3','4','5'],1],
+['ทิศตรงข้ามกับทิศเหนือคือ',['ตะวันออก','ใต้','ตะวันตก','เหนือ'],1],
+['หนึ่งโหลมีกี่ชิ้น',['10','12','15','20'],1],
+['สามเหลี่ยมมีมุมรวมกี่องศา',['90','180','270','360'],1],
+['ดวงจันทร์โคจรรอบอะไร',['ดวงอาทิตย์','โลก','ดาวอังคาร','ดาวศุกร์'],1]],
+'🔬 วิทยาศาสตร์':[['สูตรเคมีของน้ำคือ',['CO2','H2O','O2','NaCl'],1],
+['ดาวเคราะห์ที่ใหญ่ที่สุดในระบบสุริยะ',['ดาวเสาร์','ดาวพฤหัสบดี','ดาวเนปจูน','โลก'],1],
+['อวัยวะใดทำหน้าที่สูบฉีดเลือด',['ปอด','ตับ','หัวใจ','ไต'],2],
+['พืชใช้ก๊าซใดในการสังเคราะห์แสง',['ออกซิเจน','ไนโตรเจน','คาร์บอนไดออกไซด์','ฮีเลียม'],2],
+['น้ำเดือดที่กี่องศาเซลเซียส (ความดันปกติ)',['50','80','100','120'],2],
+['สัตว์เลี้ยงลูกด้วยนมชนิดใดบินได้',['นกแก้ว','ค้างคาว','ผีเสื้อ','นกกระจอก'],1],
+['แร่ธรรมชาติที่แข็งที่สุดคือ',['เหล็ก','ควอตซ์','เพชร','ทองคำ'],2],
+['หน่วยวัดกระแสไฟฟ้าคือ',['โวลต์','แอมแปร์','วัตต์','โอห์ม'],1],
+['ธาตุที่มีเลขอะตอมเท่ากับ 1 คือ',['ฮีเลียม','ไฮโดรเจน','ออกซิเจน','คาร์บอน'],1],
+['แสงเดินทางเร็วประมาณเท่าใด',['3 แสน กม./วินาที','3 หมื่น กม./วินาที','300 กม./วินาที','3 ล้าน กม./วินาที'],0]],
+'🌏 ภูมิศาสตร์':[['เมืองหลวงของญี่ปุ่นคือ',['โอซาก้า','โตเกียว','เกียวโต','นาโกย่า'],1],
+['ทวีปที่ใหญ่ที่สุดในโลกคือ',['แอฟริกา','ยุโรป','เอเชีย','อเมริกาเหนือ'],2],
+['ภูเขาที่สูงที่สุดในโลกคือ',['เคทู','ฟูจิ','เอเวอเรสต์','คิลิมันจาโร'],2],
+['มหาสมุทรที่ใหญ่ที่สุดคือ',['แอตแลนติก','อินเดีย','แปซิฟิก','อาร์กติก'],2],
+['จังหวัดที่มีพื้นที่ใหญ่ที่สุดของไทย',['เชียงใหม่','นครราชสีมา','กาญจนบุรี','ตาก'],1],
+['ทะเลทรายร้อนที่ใหญ่ที่สุดในโลก',['โกบี','สะฮารา','คาลาฮารี','อาตากามา'],1],
+['เมืองหลวงของฝรั่งเศสคือ',['ลียง','มาร์เซย์','ปารีส','นีซ'],2],
+['ประเทศไทยมีพรมแดนติดกี่ประเทศ',['3','4','5','6'],1],
+['แม่น้ำสายใดยาวที่สุดในโลก',['แอมะซอน','ไนล์','แยงซี','โขง'],1],
+['ประเทศใดมีประชากรมากที่สุดในโลก',['จีน','อินเดีย','สหรัฐฯ','อินโดนีเซีย'],1]],
+'⚽ บันเทิง & กีฬา':[['ฟุตบอลลงสนามทีมละกี่คน',['9','10','11','12'],2],
+['โอลิมปิกจัดขึ้นทุกกี่ปี',['2 ปี','3 ปี','4 ปี','5 ปี'],2],
+['กีฬาประจำชาติของไทยคือ',['ตะกร้อ','มวยไทย','กระบี่กระบอง','วิ่งเปี้ยว'],1],
+['วอลเลย์บอลลงสนามทีมละกี่คน',['5','6','7','8'],1],
+['แบดมินตันใช้ลูกอะไร',['ลูกเทนนิส','ลูกขนไก่','ลูกปิงปอง','ลูกกอล์ฟ'],1],
+['กระดานหมากรุกสากลมีกี่ช่อง',['36','49','64','81'],2],
+['บาสเกตบอลลงสนามทีมละกี่คน',['4','5','6','7'],1],
+['โดราเอมอนกลัวอะไรมากที่สุด',['แมว','หนู','สุนัข','งู'],1],
+['กีฬาใดตีลูกเล็กให้ลงหลุม',['ฮอกกี้','กอล์ฟ','คริกเก็ต','โปโล'],1],
+['เกม Minecraft มีลักษณะเด่นเป็นทรงใด',['ทรงกลม','ลูกบาศก์','พีระมิด','กรวย'],1]]};
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;const t=a[i];a[i]=a[j];a[j]=t}return a}
+let cat='',pool=[],used=[],q=null,order=[],tleft=0,tmax=0,score=0,combo=0,gain=0,rev=0,tick=null,alive=false,locked=false;
+(function(){const c=$('cats');
+ Object.keys(QB).forEach(n=>{const b=document.createElement('button');
+  b.className='btn';b.textContent=n;b.onclick=()=>start(n);c.appendChild(b)});
+ const b=document.createElement('button');b.className='btn g';b.textContent='🎲 สุ่มทุกหมวด';
+ b.onclick=()=>start('');c.appendChild(b)})();
+function start(c){cat=c;beep(600,.1,'triangle');
+ pool=c?QB[c].slice():Object.values(QB).flat();used=[];
+ tmax=11+up.tm*2;score=0;combo=0;gain=0;rev=up.rv|0;alive=true;
+ show('game');nextQ();clearInterval(tick);tick=setInterval(step,100)}
+function quit(){alive=false;clearInterval(tick);save();show('menu')}
+function nextQ(){locked=false;
+ if(used.length>=pool.length)used=[];
+ let i;do{i=Math.random()*pool.length|0}while(used.indexOf(i)>=0);
+ used.push(i);q=pool[i];
+ order=shuffle(q[1].map((t,k)=>({t:t,k:k})));
+ $('qc').textContent=(cat||'🎲 สุ่มทุกหมวด')+' · ข้อที่ '+(score+1);
+ $('qt').textContent=q[0];
+ const w=$('chs');w.innerHTML='';
+ order.forEach((o,ix)=>{const b=document.createElement('button');
+  b.className='ch';b.textContent='ABCD'[ix]+'.  '+o.t;b.onclick=()=>answer(ix,b);w.appendChild(b)});
+ tleft=tmax;hud()}
+function hud(){$('hs').textContent=score;$('hg').textContent=gain;
+ $('hc').textContent=combo+'x';$('tbar').style.width=Math.max(0,tleft/tmax*100)+'%';
+ $('fb').textContent='✂️ 50:50 ('+(up.ff|0)+')'}
+function step(){if(!alive||locked)return;tleft-=.1;
+ if(tleft<=0){tleft=0;locked=true;reveal(-1);toast('⏰ หมดเวลา!');setTimeout(()=>fail(),900)}hud()}
+function reveal(pick){const bs=$('chs').children;
+ for(let i=0;i<bs.length;i++){bs[i].disabled=true;
+  if(order[i].k==q[2])bs[i].classList.add('ok');
+  else if(i==pick)bs[i].classList.add('no')}}
+function answer(ix,b){if(!alive||locked)return;locked=true;
+ const ok=order[ix].k==q[2];reveal(ix);
+ if(ok){score++;combo++;beep(950,.1,'triangle');
+  addCoin(3+Math.floor(combo/3)+Math.round(tleft/3));hud();
+  setTimeout(()=>{if(alive)nextQ()},650)}
+ else{beep(180,.3,'sawtooth');setTimeout(fail,900)}}
+function fail(){if(!alive)return;
+ if(rev>0){rev--;up.rv--;ST('up',up);combo=0;toast('💖 ใช้ชีวิตสำรอง เหลือ '+rev);
+  beep(500,.15,'triangle');nextQ();return}
+ over()}
+function useFifty(){if(!alive||locked)return;
+ if((up.ff|0)<=0){beep(150,.2,'sawtooth');return toast('ไม่มีตัวช่วย')}
+ up.ff--;ST('up',up);beep(800,.1,'triangle');
+ const bs=$('chs').children,wrong=[];
+ for(let i=0;i<bs.length;i++)if(order[i].k!=q[2]&&!bs[i].disabled)wrong.push(i);
+ shuffle(wrong).slice(0,2).forEach(i=>bs[i].disabled=true);hud()}
+function over(){if(!alive)return;alive=false;clearInterval(tick);beep(140,.45,'sawtooth');
+ const nb=score>best;if(nb){best=score;ST('best',best)}
+ $('os').textContent=score+' ข้อ';
+ $('ob').textContent=(nb?'🏆 สถิติใหม่! ':'สถิติสูงสุด ')+best+' ข้อ';
+ $('oc').textContent='ได้รับ +'+gain+' 🪙';save();show('over')}
+function save(){ST('coin',coin);ST('up',up);ST('best',best)}
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+addEventListener('beforeunload',save);
+paint();
+</script></body></html>

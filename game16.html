@@ -1,0 +1,174 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>🏃 วิ่งกระโดดข้ามภัย</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#030713;color:#e6f4ff;display:grid;place-items:center;min-height:100vh;padding:10px}
+.app{width:100%;max-width:380px;background:#08142a;border:1px solid #16305a;border-radius:20px;padding:14px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.bar h1{flex:1;font-size:16px;color:#4ade80}
+.coin{background:#3a2c07;color:#fbbf24;border:1px solid #6b5210;padding:6px 12px;border-radius:99px;font-weight:800;font-size:14px}
+.pg{display:none}.pg.on{display:block}
+.card{background:#050f22;border:1px solid #16305a;border-radius:14px;padding:16px;text-align:center}
+.big{font-size:30px;font-weight:900;color:#fbbf24}
+.mut{font-size:12px;color:#8fa9c8;line-height:1.7}
+button{border:0;cursor:pointer;font-family:inherit}
+.btn{width:100%;padding:13px;border-radius:13px;font-size:15px;font-weight:800;color:#fff;background:#16a34a;margin-top:8px}
+.btn.g{background:#16a34a}.btn.o{background:#d97706}.btn.d{background:#122a4a;color:#cbd5e1}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hud{display:flex;gap:6px;margin:10px 0}
+.hud div{flex:1;background:#050f22;border:1px solid #16305a;border-radius:11px;padding:7px;text-align:center;font-size:10px;color:#8fa9c8}
+.hud b{display:block;font-size:15px;color:#e6f4ff}
+canvas{width:100%;display:block;border-radius:14px;border:1px solid #16305a;background:#000;touch-action:none}
+.item{display:flex;gap:10px;align-items:center;background:#050f22;border:1px solid #16305a;border-radius:13px;padding:10px;margin-bottom:8px}
+.item .ic{font-size:22px}.item .tx{flex:1}.item b{font-size:13px}.item p{font-size:11px;color:#8fa9c8}
+.item button{padding:9px 12px;border-radius:10px;background:#f59e0b;color:#2b1a00;font-weight:800;font-size:12px}
+.item button:disabled{background:#122a4a;color:#5b7398}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0c2545;border:1px solid #1d4373;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}
+.toast.on{opacity:1}
+</style></head><body>
+<div class="app">
+<div class="bar"><h1>🏃 วิ่งกระโดดข้ามภัย</h1><div class="coin">🪙 <span id="cn">0</span></div></div>
+
+<div id="menu" class="pg on">
+ <div class="card"><div style="font-size:52px">🏃</div><div class="big" id="bs">0</div>
+ <div class="mut">ระยะทางไกลสุด (เมตร)</div></div>
+ <p class="mut" style="margin-top:10px">แตะจอ / กด Space เพื่อกระโดด · เก็บ 🪙 ระหว่างทาง<br>
+ หลบ 🌵 และ 🦅 · ซื้อดับเบิลจัมป์เพื่อกระโดดกลางอากาศ</p>
+ <button class="btn g" onclick="start()">▶ ออกวิ่ง</button>
+ <button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+</div>
+
+<div id="shop" class="pg"><div id="ups"></div><button class="btn d" onclick="show('menu')">← กลับ</button></div>
+
+<div id="game" class="pg">
+ <canvas id="cv" width="320" height="380"></canvas>
+ <div class="hud"><div>ระยะ<b id="hs">0</b></div><div>เหรียญ<b id="hg">0</b></div>
+ <div>โล่<b id="hsh">0</b></div><div>ความเร็ว<b id="hv">1.0</b></div></div>
+ <div class="row"><button class="btn o" id="sb" onclick="useShield()">🛡️ กางโล่ (0)</button>
+ <button class="btn d" onclick="quit()">🏠 ออก</button></div>
+</div>
+
+<div id="over" class="pg">
+ <div class="card"><div style="font-size:44px">💥</div><div class="big" id="os">0</div>
+ <div class="mut" id="ob"></div><div style="margin-top:8px;color:#fbbf24;font-weight:800" id="oc"></div></div>
+ <button class="btn g" onclick="start()">🔄 วิ่งอีกครั้ง</button>
+ <div class="row"><button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+ <button class="btn d" onclick="show('menu')">🏠 เมนู</button></div>
+</div>
+</div><div class="toast" id="tst"></div>
+<script>
+const K='jmp_',$=i=>document.getElementById(i);
+const LD=(k,d)=>{try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const ST=(k,v)=>{try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}};
+let coin=LD('coin',0),up=LD('up',{jp:0,dj:0,mu:0,sh:0,mg:0}),best=LD('best',0);
+let AC;function beep(f,d,t,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+ if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();
+ o.type=t||'square';o.frequency.value=f;g.gain.setValueAtTime(v||.08,AC.currentTime);
+ g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+ o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function paint(){$('cn').textContent=coin;$('bs').textContent=best;
+ document.querySelectorAll('[data-c]').forEach(b=>b.disabled=coin<+b.dataset.c)}
+function toast(m){const t=$('tst');t.textContent=m;t.classList.add('on');
+ clearTimeout(t._);t._=setTimeout(()=>t.classList.remove('on'),1400)}
+function show(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));$(id).classList.add('on');paint()}
+const UPS=[{k:'jp',i:'🦵',n:'แรงกระโดด',d:'กระโดดสูงขึ้นทุกระดับ',max:3,c:l=>150+l*170},
+{k:'dj',i:'🪽',n:'ดับเบิลจัมป์',d:'กระโดดซ้ำกลางอากาศได้ (ถาวร)',max:1,c:()=>320},
+{k:'mu',i:'💰',n:'ตัวคูณเหรียญ',d:'รับเหรียญ +25% ต่อระดับ',max:4,c:l=>150+l*140},
+{k:'mg',i:'🧲',n:'แม่เหล็กดูดเหรียญ',d:'ดูดเหรียญรอบตัวไกลขึ้น',max:3,c:l=>170+l*180},
+{k:'sh',i:'🛡️',n:'โล่พลังงาน',d:'กันชน 1 ครั้ง (กดใช้ระหว่างวิ่ง)',a:1,c:()=>110}];
+function openShop(){show('shop');renderShop()}
+function renderShop(){const b=$('ups');b.innerHTML='';
+ UPS.forEach(o=>{const l=up[o.k]|0,mx=!o.a&&l>=o.max,c=o.c(l);
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div class="ic">'+o.i+'</div><div class="tx"><b>'+o.n+
+   ' <span style="color:#fbbf24">'+(o.a?'x'+l:(o.max==1?(l?'ปลดล็อกแล้ว':'ยังไม่มี'):'Lv'+l+'/'+o.max))+'</span></b><p>'+o.d+'</p></div>';
+  const t=document.createElement('button');t.textContent=mx?'MAX':'🪙 '+c;
+  if(mx)t.disabled=true;else{t.dataset.c=c;t.onclick=()=>{
+   if(coin<c){beep(150,.2,'sawtooth');return toast('เหรียญไม่พอ')}
+   coin-=c;up[o.k]=l+1;ST('coin',coin);ST('up',up);beep(900,.12,'triangle');
+   toast(o.a?'ซื้อแล้ว!':'อัปเกรดสำเร็จ!');renderShop()}}
+  d.appendChild(t);b.appendChild(d)});paint()}
+function addCoin(n){n=Math.round(n*(1+up.mu*.25));if(n<=0)return;coin+=n;gain+=n;ST('coin',coin);paint()}
+
+const cv=$('cv'),X=cv.getContext('2d'),W=320,H=380,GY=H-44,PX=58;
+let py=GY,vy=0,jumps=0,obs=[],cns=[],dist=0,gain=0,shield=0,spd=0,spawnT=0,cSpawnT=0,alive=false,last=0,raf=0,bg=0;
+const GRAV=.62;
+function maxJump(){return 1+(up.dj?1:0)}
+function start(){beep(600,.1,'triangle');
+ py=GY;vy=0;jumps=0;obs=[];cns=[];dist=0;gain=0;shield=0;
+ spd=4.2;spawnT=900;cSpawnT=700;bg=0;alive=true;
+ show('game');hud();last=performance.now();
+ cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
+function quit(){alive=false;cancelAnimationFrame(raf);save();show('menu')}
+function hud(){$('hs').textContent=Math.floor(dist)+'m';$('hg').textContent=gain;
+ $('hsh').textContent=shield;$('hv').textContent=(spd/4.2).toFixed(1);
+ $('sb').textContent='🛡️ กางโล่ ('+(up.sh|0)+')'}
+function jump(){if(!alive)return;
+ if(jumps>=maxJump())return;
+ vy=-(10.4+up.jp*.75);jumps++;
+ beep(jumps>1?760:520,.09,'triangle')}
+function loop(t){if(!alive)return;const dt=Math.min(40,t-last);last=t;const f=dt/16.7;
+ spd=4.2+Math.min(4.6,dist/220);bg+=spd*f;
+ vy+=GRAV*f;py+=vy*f;
+ if(py>=GY){py=GY;vy=0;jumps=0}
+ dist+=spd*f*.14;
+ spawnT-=dt;
+ if(spawnT<=0){spawnT=Math.max(520,1250-dist*1.6)+Math.random()*420;
+  const fly=dist>140&&Math.random()<.32;
+  obs.push(fly?{x:W+24,y:GY-74,w:26,h:24,e:'🦅',fl:1}
+               :{x:W+24,y:GY-(Math.random()<.35?40:28),w:24,h:Math.random()<.35?40:28,e:'🌵'})}
+ cSpawnT-=dt;
+ if(cSpawnT<=0){cSpawnT=560+Math.random()*700;
+  const base=GY-(Math.random()<.5?22:78);
+  for(let i=0;i<3;i++)cns.push({x:W+20+i*26,y:base-Math.sin(i)*6,r:11})}
+ obs.forEach(o=>o.x-=spd*f);obs=obs.filter(o=>o.x>-40);
+ const mag=18+up.mg*22;
+ cns.forEach(c=>{c.x-=spd*f;
+  const dx=PX-c.x,dy=(py-16)-c.y,d=Math.hypot(dx,dy);
+  if(d<mag+10){c.x+=dx*.16*f;c.y+=dy*.16*f}
+  if(d<24){c.dead=1;addCoin(1);beep(1150,.05,'triangle',.05)}});
+ cns=cns.filter(c=>!c.dead&&c.x>-30);
+ const pl={x:PX-13,y:py-32,w:26,h:32};
+ for(const o of obs){if(o.hit)continue;
+  if(pl.x<o.x+o.w-4&&pl.x+pl.w>o.x+4&&pl.y<o.y+o.h-3&&pl.y+pl.h>o.y+3){
+   o.hit=1;
+   if(shield>0){shield--;beep(320,.2,'triangle');toast('🛡️ โล่รับไว้!');o.x=-99}
+   else{beep(150,.4,'sawtooth');return over()}}}
+ draw();hud();raf=requestAnimationFrame(loop)}
+function draw(){const g=X.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,'#071c3a');g.addColorStop(1,'#020a18');
+ X.fillStyle=g;X.fillRect(0,0,W,H);
+ X.fillStyle='rgba(148,163,184,.18)';
+ for(let i=0;i<6;i++){const x=(i*90-bg*.25)%(W+90)-45;
+  X.beginPath();X.arc(x,60+i%3*26,24,0,7);X.fill()}
+ X.fillStyle='#132a50';X.fillRect(0,GY,W,H-GY);
+ X.fillStyle='#1d4373';
+ for(let i=0;i<14;i++){const x=(i*34-bg%34);X.fillRect(x,GY,18,4)}
+ X.textAlign='center';X.textBaseline='bottom';
+ X.font='24px serif';obs.forEach(o=>X.fillText(o.e,o.x+o.w/2,o.y+o.h));
+ X.textBaseline='middle';X.font='18px serif';
+ cns.forEach(c=>X.fillText('🪙',c.x,c.y));
+ X.font='30px serif';X.textBaseline='bottom';
+ X.fillText(vy<-1?'🤸':'🏃',PX,py+4);
+ if(shield>0){X.strokeStyle='#22d3ee';X.lineWidth=2.5;
+  X.beginPath();X.arc(PX,py-16,26,0,7);X.stroke()}
+ X.fillStyle='#fff';X.font='900 13px system-ui';X.textAlign='left';X.textBaseline='top';
+ X.fillText(Math.floor(dist)+' m',10,12)}
+function useShield(){if(!alive)return;
+ if((up.sh|0)<=0){beep(150,.2,'sawtooth');return toast('ไม่มีโล่ในคลัง')}
+ up.sh--;ST('up',up);shield++;beep(900,.15,'triangle');toast('🛡️ กางโล่แล้ว');hud()}
+function over(){if(!alive)return;alive=false;cancelAnimationFrame(raf);
+ beep(140,.45,'sawtooth');
+ const d=Math.floor(dist);addCoin(Math.round(d/18));
+ const nb=d>best;if(nb){best=d;ST('best',best)}
+ $('os').textContent=d+' m';
+ $('ob').textContent=(nb?'🏆 สถิติใหม่! ':'สถิติสูงสุด ')+best+' m';
+ $('oc').textContent='ได้รับ +'+gain+' 🪙';save();show('over')}
+cv.addEventListener('touchstart',e=>{e.preventDefault();jump()},{passive:false});
+cv.addEventListener('mousedown',e=>{e.preventDefault();jump()});
+addEventListener('keydown',e=>{if(e.code=='Space'||e.key=='ArrowUp'){e.preventDefault();jump()}});
+function save(){ST('coin',coin);ST('up',up);ST('best',best)}
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+addEventListener('beforeunload',save);
+paint();
+</script></body></html>

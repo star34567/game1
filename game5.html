@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>🔢 2048</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#14100a;color:#f6f1e6;display:grid;place-items:center;min-height:100vh;padding:10px}
+.app{width:100%;max-width:370px;background:#241c10;border:1px solid #4a3a1c;border-radius:18px;padding:14px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}.bar h1{flex:1;font-size:16px;color:#fbbf24}
+.coin{background:#3a2c07;color:#fbbf24;border:1px solid #6b5210;padding:6px 12px;border-radius:99px;font-weight:800;font-size:14px}
+.pg{display:none}.pg.on{display:block}
+.card{background:#1a1309;border:1px solid #4a3a1c;border-radius:14px;padding:16px;text-align:center}
+.big{font-size:30px;font-weight:900;color:#fbbf24}.mut{font-size:12px;color:#bda879;line-height:1.7}
+button{border:0;cursor:pointer;font-family:inherit}
+.btn{width:100%;padding:13px;border-radius:12px;font-size:15px;font-weight:800;color:#fff;background:#b45309;margin-top:8px}
+.btn.g{background:#16a34a}.btn.o{background:#d97706}.btn.d{background:#3a2c14;color:#e8dcc4}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hud{display:flex;gap:6px;margin:10px 0}
+.hud div{flex:1;background:#1a1309;border:1px solid #4a3a1c;border-radius:10px;padding:7px;text-align:center;font-size:10px;color:#bda879}
+.hud b{display:block;font-size:15px;color:#fff}
+#bd{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;background:#1a1309;padding:7px;border-radius:12px;touch-action:none}
+.tile{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;font-weight:900;font-size:21px;background:#2c2113;transition:.1s}
+.tile.hm{cursor:crosshair;outline:2px dashed #f87171}
+.item{display:flex;gap:10px;align-items:center;background:#1a1309;border:1px solid #4a3a1c;border-radius:12px;padding:10px;margin-bottom:8px}
+.item .tx{flex:1}.item b{font-size:13px}.item p{font-size:11px;color:#bda879}
+.item button{padding:9px 12px;border-radius:10px;background:#f59e0b;color:#2b1a00;font-weight:800;font-size:12px}
+.item button:disabled{background:#3a2c14;color:#7a6845}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#33260f;border:1px solid #5f4718;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}
+.toast.on{opacity:1}
+</style></head><body>
+<div class="app">
+<div class="bar"><h1>🔢 2048 Fusion</h1><div class="coin">🪙 <span id="cn">0</span></div></div>
+
+<div id="menu" class="pg on">
+ <div class="card"><div style="font-size:50px">🔢</div><div class="big" id="bs">0</div><div class="mut">คะแนนสูงสุด</div></div>
+ <p class="mut" style="margin-top:10px">ปัดนิ้ว / กดลูกศร เพื่อรวมเลขเหมือนกัน<br>
+ ยิ่งรวมเลขใหญ่ยิ่งได้เหรียญเยอะ · แตะ 2048 ได้โบนัสก้อนโต</p>
+ <button class="btn g" onclick="start()">▶ เริ่มเล่น</button>
+ <button class="btn o" onclick="openShop()">🛒 ร้านค้า</button></div>
+
+<div id="shop" class="pg"><div id="ups"></div><button class="btn d" onclick="show('menu')">← กลับ</button></div>
+
+<div id="game" class="pg">
+ <div class="hud"><div>คะแนน<b id="hs">0</b></div><div>เหรียญ<b id="hg">0</b></div>
+ <div>ย้อน<b id="hu">0</b></div><div>ค้อน<b id="hh">0</b></div></div>
+ <div id="bd"></div>
+ <div class="row"><button class="btn d" onclick="doUndo()">↩️ ย้อนกลับ (🪙25)</button>
+ <button class="btn d" onclick="doHammer()">🔨 ค้อนทุบ (🪙40)</button></div>
+ <button class="btn d" onclick="quit()">🏠 ออก</button></div>
+
+<div id="over" class="pg">
+ <div class="card"><div style="font-size:42px" id="oe">💀</div><div class="big" id="os">0</div>
+ <div class="mut" id="ob"></div><div style="margin-top:8px;color:#fbbf24;font-weight:800" id="oc"></div></div>
+ <button class="btn g" onclick="start()">🔄 เล่นอีกครั้ง</button>
+ <div class="row"><button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+ <button class="btn d" onclick="show('menu')">🏠 เมนู</button></div></div>
+</div><div class="toast" id="tst"></div>
+<script>
+const K='g48_',$=i=>document.getElementById(i);
+const LD=(k,d)=>{try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const ST=(k,v)=>{try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}};
+let coin=LD('coin',0),up=LD('up',{un:0,hm:0,st:0,mu:0}),best=LD('best',0);
+let AC;function beep(f,d,t){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+ if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();
+ o.type=t||'square';o.frequency.value=f;g.gain.setValueAtTime(.08,AC.currentTime);
+ g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);
+ o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function paint(){$('cn').textContent=coin;$('bs').textContent=best;
+ document.querySelectorAll('[data-c]').forEach(b=>b.disabled=coin<+b.dataset.c)}
+function toast(m){const t=$('tst');t.textContent=m;t.classList.add('on');clearTimeout(t._);
+ t._=setTimeout(()=>t.classList.remove('on'),1400)}
+function show(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));$(id).classList.add('on');paint()}
+const UPS=[{k:'un',n:'ย้อนกลับฟรี',d:'เริ่มเกมพร้อมสิทธิ์ย้อนกลับ',i:'↩️',max:3,c:l=>140+l*150},
+{k:'hm',n:'ค้อนฟรี',d:'เริ่มเกมพร้อมค้อนทุบไทล์',i:'🔨',max:3,c:l=>160+l*170},
+{k:'st',n:'เริ่มไทล์ใหญ่',d:'ไทล์เริ่มต้นมีโอกาสเป็น 4 มากขึ้น',i:'🎲',max:3,c:l=>120+l*130},
+{k:'mu',n:'ตัวคูณเหรียญ',d:'รับเหรียญ +25% ต่อระดับ',i:'💰',max:4,c:l=>150+l*140}];
+function openShop(){show('shop');renderShop()}
+function renderShop(){const b=$('ups');b.innerHTML='';
+ UPS.forEach(o=>{const l=up[o.k]|0,mx=l>=o.max,c=o.c(l);const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div style="font-size:22px">'+o.i+'</div><div class="tx"><b>'+o.n+
+   ' <span style="color:#fbbf24">Lv'+l+'/'+o.max+'</span></b><p>'+o.d+'</p></div>';
+  const t=document.createElement('button');t.textContent=mx?'MAX':'🪙 '+c;
+  if(mx)t.disabled=true;else{t.dataset.c=c;t.onclick=()=>{if(coin<c){beep(150,.2,'sawtooth');return toast('เหรียญไม่พอ')}
+   coin-=c;up[o.k]=l+1;ST('coin',coin);ST('up',up);beep(900,.1,'triangle');renderShop()}}
+  d.appendChild(t);b.appendChild(d)});paint()}
+function addCoin(n){if(n<=0)return;coin+=n;gain+=n;ST('coin',coin);paint()}
+
+const COL={2:'#efe5da',4:'#ece0c8',8:'#f2b179',16:'#f59563',32:'#f67c5f',64:'#f65e3b',
+128:'#edcf72',256:'#edcc61',512:'#edc850',1024:'#eec440',2048:'#edc22e'};
+let bd,score,gain,undoS,undoN,hamN,hamMode,alive=false,won;
+const cells=[];const BD=$('bd');
+for(let i=0;i<16;i++){const d=document.createElement('div');d.className='tile';
+ d.onclick=()=>{if(hamMode&&bd[i]){bd[i]=0;hamMode=false;hamN--;beep(250,.15,'sawtooth');
+  toast('🔨 ทุบไทล์แล้ว');draw()}};BD.appendChild(d);cells.push(d)}
+function add(){const e=[];bd.forEach((v,i)=>{if(!v)e.push(i)});if(!e.length)return;
+ bd[e[Math.random()*e.length|0]]=Math.random()<(.9-up.st*.08)?2:4}
+function start(){beep(600,.1,'triangle');bd=Array(16).fill(0);score=0;gain=0;won=false;
+ undoN=up.un;hamN=up.hm;undoS=null;hamMode=false;alive=true;add();add();show('game');draw()}
+function quit(){alive=false;show('menu')}
+function hud(){$('hs').textContent=score;$('hg').textContent=gain;$('hu').textContent=undoN;$('hh').textContent=hamN}
+function draw(){bd.forEach((v,i)=>{const t=cells[i];t.textContent=v||'';
+ t.style.background=v?COL[v]||'#3c1f1f':'#2c2113';
+ t.style.color=v&&v<=4?'#6b5a45':'#fff';
+ t.style.fontSize=(v>=1024?16:v>=128?19:21)+'px';
+ t.classList.toggle('hm',hamMode&&!!v)});hud()}
+function slide(line){const a=line.filter(v=>v),r=[];
+ for(let i=0;i<a.length;i++){if(a[i]===a[i+1]){const v=a[i]*2;r.push(v);score+=v;
+   addCoin(Math.round(Math.max(1,Math.log2(v)-1)*(1+up.mu*.25)));
+   if(v===2048&&!won){won=true;addCoin(Math.round(150*(1+up.mu*.25)));toast('🏆 ถึง 2048 แล้ว! โบนัสก้อนโต')}
+   i++}else r.push(a[i])}
+ while(r.length<4)r.push(0);return r}
+function move(dir){if(!alive)return;const prev=bd.slice(),ps=score;
+ for(let i=0;i<4;i++){const line=[];
+  for(let j=0;j<4;j++)line.push(bd[dir<2?i*4+j:j*4+i]);
+  if(dir===1||dir===3)line.reverse();
+  let r=slide(line);
+  if(dir===1||dir===3)r.reverse();
+  for(let j=0;j<4;j++)bd[dir<2?i*4+j:j*4+i]=r[j]}
+ if(bd.join()!==prev.join()){undoS={b:prev,s:ps};beep(420,.05);add();draw();
+  if(dead())over()}else{score=ps;draw()}}
+function dead(){if(bd.includes(0))return false;
+ for(let r=0;r<4;r++)for(let c=0;c<4;c++){const v=bd[r*4+c];
+  if(c<3&&bd[r*4+c+1]===v)return false;if(r<3&&bd[(r+1)*4+c]===v)return false}
+ return true}
+function doUndo(){if(!alive||!undoS)return toast('ยังย้อนไม่ได้');
+ if(undoN>0)undoN--;else{if(coin<25)return toast('เหรียญไม่พอ');coin-=25;ST('coin',coin);paint()}
+ bd=undoS.b.slice();score=undoS.s;undoS=null;beep(700,.1,'triangle');toast('↩️ ย้อนกลับแล้ว');draw()}
+function doHammer(){if(!alive)return;
+ if(hamMode){hamMode=false;draw();return}
+ if(hamN<=0){if(coin<40)return toast('เหรียญไม่พอ');coin-=40;ST('coin',coin);hamN++;paint()}
+ hamMode=true;toast('🔨 แตะไทล์ที่ต้องการทุบ');draw()}
+function over(){alive=false;beep(150,.4,'sawtooth');
+ addCoin(Math.round(score/120*(1+up.mu*.25)));
+ const mx=Math.max(...bd),nb=score>best;if(nb){best=score;ST('best',best)}
+ $('oe').textContent=nb?'🏆':'💀';$('os').textContent=score.toLocaleString();
+ $('ob').textContent='ไทล์ใหญ่สุด '+mx+' · สถิติ '+best;
+ $('oc').textContent='ได้รับ +'+gain+' 🪙';show('over')}
+addEventListener('keydown',e=>{const m={ArrowLeft:0,ArrowRight:1,ArrowUp:2,ArrowDown:3};
+ if(m[e.key]!==undefined){e.preventDefault();move(m[e.key])}});
+let sx,sy;BD.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+BD.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+ if(Math.abs(dx)<20&&Math.abs(dy)<20)return;
+ move(Math.abs(dx)>Math.abs(dy)?(dx>0?1:0):(dy>0?3:2))});
+paint();
+</script></body></html>

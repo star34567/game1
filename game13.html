@@ -1,0 +1,186 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>🧩 เขาวงกตล่าอัญมณี</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#030713;color:#e6f4ff;display:grid;place-items:center;min-height:100vh;padding:10px}
+.app{width:100%;max-width:380px;background:#08142a;border:1px solid #16305a;border-radius:20px;padding:14px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.bar h1{flex:1;font-size:16px;color:#facc15}
+.coin{background:#3a2c07;color:#fbbf24;border:1px solid #6b5210;padding:6px 12px;border-radius:99px;font-weight:800;font-size:14px}
+.pg{display:none}.pg.on{display:block}
+.card{background:#050f22;border:1px solid #16305a;border-radius:14px;padding:16px;text-align:center}
+.big{font-size:30px;font-weight:900;color:#fbbf24}
+.mut{font-size:12px;color:#8fa9c8;line-height:1.7}
+button{border:0;cursor:pointer;font-family:inherit}
+.btn{width:100%;padding:13px;border-radius:13px;font-size:15px;font-weight:800;color:#fff;background:#ca8a04;margin-top:8px}
+.btn.g{background:#16a34a}.btn.o{background:#d97706}.btn.d{background:#122a4a;color:#cbd5e1}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hud{display:flex;gap:6px;margin:10px 0}
+.hud div{flex:1;background:#050f22;border:1px solid #16305a;border-radius:11px;padding:7px;text-align:center;font-size:10px;color:#8fa9c8}
+.hud b{display:block;font-size:15px;color:#e6f4ff}
+.item{display:flex;gap:10px;align-items:center;background:#050f22;border:1px solid #16305a;border-radius:13px;padding:10px;margin-bottom:8px}
+.item .ic{font-size:22px}.item .tx{flex:1}.item b{font-size:13px}.item p{font-size:11px;color:#8fa9c8}
+.item button{padding:9px 12px;border-radius:10px;background:#f59e0b;color:#2b1a00;font-weight:800;font-size:12px}
+.item button:disabled{background:#122a4a;color:#5b7398}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0c2545;border:1px solid #1d4373;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}
+.toast.on{opacity:1}
+canvas{width:100%;display:block;border-radius:14px;border:1px solid #16305a;background:#02060f;touch-action:none}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.pad button{padding:15px 0;border-radius:12px;background:#122a4a;border:1px solid #1d4373;color:#e6f4ff;font-size:20px;font-weight:900}
+.pad .sp{visibility:hidden}
+</style></head><body>
+<div class="app">
+<div class="bar"><h1>🧩 เขาวงกตล่าอัญมณี</h1><div class="coin">🪙 <span id="cn">0</span></div></div>
+
+<div id="menu" class="pg on">
+ <div class="card"><div style="font-size:52px">🧩</div><div class="big" id="bs">0</div>
+ <div class="mut">ด่านสูงสุดที่ผ่านได้</div></div>
+ <p class="mut" style="margin-top:10px">พาไปหาประตู 🚪 ก่อนหมดเวลา · เก็บ 💎 ได้เหรียญเพิ่ม<br>บังคับด้วยปุ่มลูกศร ปัดหน้าจอ หรือคีย์บอร์ด</p>
+ <button class="btn g" onclick="start()">▶ เริ่มผจญภัย</button>
+ <button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+</div>
+
+<div id="shop" class="pg"><div id="ups"></div><button class="btn d" onclick="show('menu')">← กลับ</button></div>
+
+<div id="game" class="pg">
+ <canvas id="cv" width="330" height="330"></canvas>
+ <div class="hud"><div>ด่าน<b id="hl">1</b></div><div>เวลา<b id="ht">0</b></div>
+ <div>💎<b id="hgm">0</b></div><div>เหรียญ<b id="hg">0</b></div></div>
+ <div class="pad">
+  <button class="sp"></button><button onclick="mv(0,-1)">⬆️</button><button class="sp"></button>
+  <button onclick="mv(-1,0)">⬅️</button><button onclick="mv(0,1)">⬇️</button><button onclick="mv(1,0)">➡️</button></div>
+ <div class="row"><button class="btn o" id="cb" onclick="useCompass()">🧭 เข็มทิศ (0)</button>
+ <button class="btn d" onclick="quit()">🏠 ออก</button></div>
+</div>
+
+<div id="over" class="pg">
+ <div class="card"><div style="font-size:44px">⌛</div><div class="big" id="os">0</div>
+ <div class="mut" id="ob"></div><div style="margin-top:8px;color:#fbbf24;font-weight:800" id="oc"></div></div>
+ <button class="btn g" onclick="start()">🔄 เล่นอีกครั้ง</button>
+ <div class="row"><button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+ <button class="btn d" onclick="show('menu')">🏠 เมนู</button></div>
+</div>
+</div><div class="toast" id="tst"></div>
+<script>
+const K='mze_',$=i=>document.getElementById(i);
+const LD=(k,d)=>{try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const ST=(k,v)=>{try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}};
+let coin=LD('coin',0),up=LD('up',{tm:0,vi:0,mu:0,cp:0}),best=LD('best',0);
+let AC;function beep(f,d,t,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+ if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();
+ o.type=t||'square';o.frequency.value=f;g.gain.setValueAtTime(v||.08,AC.currentTime);
+ g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+ o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function paint(){$('cn').textContent=coin;$('bs').textContent=best;
+ document.querySelectorAll('[data-c]').forEach(b=>b.disabled=coin<+b.dataset.c)}
+function toast(m){const t=$('tst');t.textContent=m;t.classList.add('on');
+ clearTimeout(t._);t._=setTimeout(()=>t.classList.remove('on'),1400)}
+function show(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));$(id).classList.add('on');paint()}
+const UPS=[{k:'tm',i:'⏱️',n:'เวลาต่อด่าน',d:'+6 วินาทีต่อระดับ',max:4,c:l=>140+l*150},
+{k:'vi',i:'👁️',n:'ระยะมองเห็น',d:'เห็นรอบตัวไกลขึ้น 1 ช่อง',max:3,c:l=>200+l*230},
+{k:'mu',i:'💰',n:'ตัวคูณเหรียญ',d:'รับเหรียญ +25% ต่อระดับ',max:4,c:l=>150+l*140},
+{k:'cp',i:'🧭',n:'เข็มทิศนำทาง',d:'เผยเส้นทางไปประตู 3 วินาที',a:1,c:()=>75}];
+function openShop(){show('shop');renderShop()}
+function renderShop(){const b=$('ups');b.innerHTML='';
+ UPS.forEach(o=>{const l=up[o.k]|0,mx=!o.a&&l>=o.max,c=o.c(l);
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div class="ic">'+o.i+'</div><div class="tx"><b>'+o.n+
+   ' <span style="color:#fbbf24">'+(o.a?'x'+l:'Lv'+l+'/'+o.max)+'</span></b><p>'+o.d+'</p></div>';
+  const t=document.createElement('button');t.textContent=mx?'MAX':'🪙 '+c;
+  if(mx)t.disabled=true;else{t.dataset.c=c;t.onclick=()=>{
+   if(coin<c){beep(150,.2,'sawtooth');return toast('เหรียญไม่พอ')}
+   coin-=c;up[o.k]=l+1;ST('coin',coin);ST('up',up);beep(900,.12,'triangle');
+   toast(o.a?'ซื้อแล้ว!':'อัปเป็น Lv'+(l+1));renderShop()}}
+  d.appendChild(t);b.appendChild(d)});paint()}
+function addCoin(n){n=Math.round(n*(1+up.mu*.25));if(n<=0)return;coin+=n;gain+=n;ST('coin',coin);paint()}
+
+const cv=$('cv'),X=cv.getContext('2d'),W=330;
+let g=[],N=9,px=1,py=1,lvl=1,tleft=0,tmax=0,gems=[],got=0,gain=0,path=[],pt=0,alive=false,tick=null;
+function genMaze(n){const m=[];
+ for(let y=0;y<n;y++){m.push([]);for(let x=0;x<n;x++)m[y].push(1)}
+ const st=[[1,1]];m[1][1]=0;
+ while(st.length){const c=st[st.length-1],x=c[0],y=c[1];
+  const d=[[2,0],[-2,0],[0,2],[0,-2]].filter(v=>{
+   const nx=x+v[0],ny=y+v[1];return nx>0&&ny>0&&nx<n-1&&ny<n-1&&m[ny][nx]==1});
+  if(!d.length){st.pop();continue}
+  const v=d[Math.random()*d.length|0];
+  m[y+v[1]/2][x+v[0]/2]=0;m[y+v[1]][x+v[0]]=0;st.push([x+v[0],y+v[1]])}
+ return m}
+function bfs(sx,sy,ex,ey){const q=[[sx,sy]],pr={},seen={};seen[sx+','+sy]=1;
+ while(q.length){const c=q.shift();
+  if(c[0]==ex&&c[1]==ey){const p=[];let k=ex+','+ey;
+   while(k){const a=k.split(',');p.push([+a[0],+a[1]]);k=pr[k]}return p}
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(v=>{const nx=c[0]+v[0],ny=c[1]+v[1],k=nx+','+ny;
+   if(nx>=0&&ny>=0&&nx<N&&ny<N&&!g[ny][nx]&&!seen[k]){seen[k]=1;pr[k]=c[0]+','+c[1];q.push([nx,ny])}})}
+ return []}
+function start(){beep(600,.1,'triangle');lvl=1;gain=0;alive=true;show('game');
+ build();clearInterval(tick);tick=setInterval(step,100)}
+function build(){N=Math.min(21,7+lvl*2);if(N%2==0)N++;
+ g=genMaze(N);px=1;py=1;path=[];pt=0;got=0;
+ tmax=26+lvl*3+up.tm*6;tleft=tmax;
+ gems=[];const open=[];
+ for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++)
+  if(!g[y][x]&&!(x<3&&y<3)&&!(x>N-4&&y>N-4))open.push([x,y]);
+ for(let i=0;i<3&&open.length;i++){const k=Math.random()*open.length|0;
+  gems.push({x:open[k][0],y:open[k][1]});open.splice(k,1)}
+ g[N-2][N-2]=0;draw();hud()}
+function quit(){alive=false;clearInterval(tick);save();show('menu')}
+function hud(){$('hl').textContent=lvl;$('ht').textContent=Math.ceil(tleft);
+ $('hgm').textContent=got+'/3';$('hg').textContent=gain;
+ $('cb').textContent='🧭 เข็มทิศ ('+(up.cp|0)+')'}
+function step(){if(!alive)return;tleft-=.1;
+ if(pt>0){pt-=.1;if(pt<=0){path=[];draw()}}
+ if(tleft<=0){tleft=0;return over()}hud()}
+function mv(dx,dy){if(!alive)return;
+ const nx=px+dx,ny=py+dy;
+ if(nx<0||ny<0||nx>=N||ny>=N||g[ny][nx]){beep(160,.07,'sawtooth');
+  toast('🧱 ชนกำแพง! เสียเวลา 1 วิ');tleft=Math.max(0,tleft-1);hud();return}
+ px=nx;py=ny;beep(600,.03,'triangle',.03);
+ gems=gems.filter(gm=>{if(gm.x==px&&gm.y==py){got++;addCoin(8+lvl*2);
+  beep(1100,.1,'triangle');toast('💎 +อัญมณี!');return false}return true});
+ if(px==N-2&&py==N-2)return clear();
+ draw();hud()}
+function clear(){beep(950,.2,'triangle');
+ addCoin(12+lvl*6+Math.round(tleft));
+ if(lvl>best){best=lvl;ST('best',best)}
+ toast('🚪 ผ่านด่าน '+lvl+'!');lvl++;build();save()}
+function useCompass(){if(!alive)return;
+ if((up.cp|0)<=0){beep(150,.2,'sawtooth');return toast('ไม่มีเข็มทิศ')}
+ up.cp--;ST('up',up);path=bfs(px,py,N-2,N-2);pt=3;
+ beep(880,.15,'triangle');draw();hud()}
+function draw(){const s=W/N;X.fillStyle='#02060f';X.fillRect(0,0,W,W);
+ const r=2+up.vi+(pt>0?99:0);
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  const d=Math.max(Math.abs(x-px),Math.abs(y-py));
+  if(d>r)continue;
+  const a=Math.max(.25,1-d/(r+1.5));
+  X.fillStyle=g[y][x]?'rgba(29,67,115,'+a+')':'rgba(9,22,45,'+a+')';
+  X.fillRect(x*s,y*s,s+.5,s+.5)}
+ X.strokeStyle='rgba(250,204,21,.55)';X.lineWidth=Math.max(2,s*.22);
+ if(path.length>1){X.beginPath();
+  path.forEach((p,i)=>{const cx=p[0]*s+s/2,cy=p[1]*s+s/2;i?X.lineTo(cx,cy):X.moveTo(cx,cy)});X.stroke()}
+ X.font=(s*.75|0)+'px serif';X.textAlign='center';X.textBaseline='middle';
+ X.fillText('🚪',(N-2)*s+s/2,(N-2)*s+s/2);
+ gems.forEach(gm=>{if(Math.max(Math.abs(gm.x-px),Math.abs(gm.y-py))<=r)
+  X.fillText('💎',gm.x*s+s/2,gm.y*s+s/2)});
+ X.fillText('🧑‍🚀',px*s+s/2,py*s+s/2)}
+function over(){if(!alive)return;alive=false;clearInterval(tick);beep(140,.45,'sawtooth');
+ $('os').textContent='ด่าน '+lvl;
+ $('ob').textContent='สถิติสูงสุด ด่าน '+best;
+ $('oc').textContent='ได้รับ +'+gain+' 🪙';save();show('over')}
+let tsx=0,tsy=0;
+cv.addEventListener('touchstart',e=>{tsx=e.touches[0].clientX;tsy=e.touches[0].clientY},{passive:true});
+cv.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+cv.addEventListener('touchend',e=>{const t=e.changedTouches[0];
+ const dx=t.clientX-tsx,dy=t.clientY-tsy;
+ if(Math.abs(dx)<18&&Math.abs(dy)<18)return;
+ if(Math.abs(dx)>Math.abs(dy))mv(dx>0?1:-1,0);else mv(0,dy>0?1:-1)});
+addEventListener('keydown',e=>{if(!alive)return;
+ const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
+  w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]}[e.key];
+ if(m){e.preventDefault();mv(m[0],m[1])}});
+function save(){ST('coin',coin);ST('up',up);ST('best',best)}
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+addEventListener('beforeunload',save);
+paint();
+</script></body></html>

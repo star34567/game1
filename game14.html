@@ -1,0 +1,187 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>💣 กู้ระเบิดล่าสมบัติ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#030713;color:#e6f4ff;display:grid;place-items:center;min-height:100vh;padding:10px}
+.app{width:100%;max-width:380px;background:#08142a;border:1px solid #16305a;border-radius:20px;padding:14px}
+.bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.bar h1{flex:1;font-size:16px;color:#fb7185}
+.coin{background:#3a2c07;color:#fbbf24;border:1px solid #6b5210;padding:6px 12px;border-radius:99px;font-weight:800;font-size:14px}
+.pg{display:none}.pg.on{display:block}
+.card{background:#050f22;border:1px solid #16305a;border-radius:14px;padding:16px;text-align:center}
+.big{font-size:30px;font-weight:900;color:#fbbf24}
+.mut{font-size:12px;color:#8fa9c8;line-height:1.7}
+button{border:0;cursor:pointer;font-family:inherit}
+.btn{width:100%;padding:13px;border-radius:13px;font-size:15px;font-weight:800;color:#fff;background:#e11d48;margin-top:8px}
+.btn.g{background:#16a34a}.btn.o{background:#d97706}.btn.d{background:#122a4a;color:#cbd5e1}
+.btn.on{background:#0891b2}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hud{display:flex;gap:6px;margin:10px 0}
+.hud div{flex:1;background:#050f22;border:1px solid #16305a;border-radius:11px;padding:7px;text-align:center;font-size:10px;color:#8fa9c8}
+.hud b{display:block;font-size:15px;color:#e6f4ff}
+.item{display:flex;gap:10px;align-items:center;background:#050f22;border:1px solid #16305a;border-radius:13px;padding:10px;margin-bottom:8px}
+.item .ic{font-size:22px}.item .tx{flex:1}.item b{font-size:13px}.item p{font-size:11px;color:#8fa9c8}
+.item button{padding:9px 12px;border-radius:10px;background:#f59e0b;color:#2b1a00;font-weight:800;font-size:12px}
+.item button:disabled{background:#122a4a;color:#5b7398}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0c2545;border:1px solid #1d4373;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}
+.toast.on{opacity:1}
+#bd{display:grid;gap:2px;margin:10px 0;user-select:none}
+#bd button{aspect-ratio:1;border-radius:5px;background:#1d4373;border:1px solid #2a5691;
+ font-weight:900;display:grid;place-items:center;padding:0;line-height:1;color:#e6f4ff}
+#bd button.op{background:#0a1730;border-color:#132a50}
+#bd button.bm{background:#991b1b;border-color:#ef4444}
+</style></head><body>
+<div class="app">
+<div class="bar"><h1>💣 กู้ระเบิดล่าสมบัติ</h1><div class="coin">🪙 <span id="cn">0</span></div></div>
+
+<div id="menu" class="pg on">
+ <div class="card"><div style="font-size:52px">💣</div><div class="big" id="bs">0</div>
+ <div class="mut">ด่านสูงสุดที่กู้สำเร็จ</div></div>
+ <p class="mut" style="margin-top:10px">แตะเปิดช่อง · กดค้างหรือสลับโหมด 🚩 เพื่อปักธง<br>เปิดครบทุกช่องที่ไม่มีระเบิด = ผ่านด่าน</p>
+ <button class="btn g" onclick="start()">▶ เริ่มภารกิจ</button>
+ <button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+</div>
+
+<div id="shop" class="pg"><div id="ups"></div><button class="btn d" onclick="show('menu')">← กลับ</button></div>
+
+<div id="game" class="pg">
+ <div id="bd"></div>
+ <div class="hud"><div>ด่าน<b id="hl">1</b></div><div>ระเบิด<b id="hm">0</b></div>
+ <div>เกราะ<b id="hsh">0</b></div><div>เหรียญ<b id="hg">0</b></div></div>
+ <button class="btn" id="fb" onclick="toggleFlag()">⛏️ โหมดขุด</button>
+ <div class="row"><button class="btn o" id="sb" onclick="useScan()">🔍 สแกน (0)</button>
+ <button class="btn d" onclick="quit()">🏠 ออก</button></div>
+</div>
+
+<div id="over" class="pg">
+ <div class="card"><div style="font-size:44px">💥</div><div class="big" id="os">0</div>
+ <div class="mut" id="ob"></div><div style="margin-top:8px;color:#fbbf24;font-weight:800" id="oc"></div></div>
+ <button class="btn g" onclick="start()">🔄 เล่นอีกครั้ง</button>
+ <div class="row"><button class="btn o" onclick="openShop()">🛒 ร้านค้า</button>
+ <button class="btn d" onclick="show('menu')">🏠 เมนู</button></div>
+</div>
+</div><div class="toast" id="tst"></div>
+<script>
+const K='mns_',$=i=>document.getElementById(i);
+const LD=(k,d)=>{try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const ST=(k,v)=>{try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}};
+let coin=LD('coin',0),up=LD('up',{sf:0,mu:0,sh:0,sc:0}),best=LD('best',0);
+let AC;function beep(f,d,t,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+ if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain();
+ o.type=t||'square';o.frequency.value=f;g.gain.setValueAtTime(v||.08,AC.currentTime);
+ g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+ o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function paint(){$('cn').textContent=coin;$('bs').textContent=best;
+ document.querySelectorAll('[data-c]').forEach(b=>b.disabled=coin<+b.dataset.c)}
+function toast(m){const t=$('tst');t.textContent=m;t.classList.add('on');
+ clearTimeout(t._);t._=setTimeout(()=>t.classList.remove('on'),1400)}
+function show(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));$(id).classList.add('on');paint()}
+const UPS=[{k:'sf',i:'🍀',n:'คลิกแรกปลอดภัย',d:'ช่องแรกและรอบข้างไม่มีระเบิด',max:1,c:()=>250},
+{k:'mu',i:'💰',n:'ตัวคูณเหรียญ',d:'รับเหรียญ +25% ต่อระดับ',max:4,c:l=>150+l*140},
+{k:'sh',i:'🛡️',n:'เกราะกันระเบิด',d:'รอดจากระเบิด 1 ครั้ง',a:1,c:()=>120},
+{k:'sc',i:'🔍',n:'เครื่องสแกน',d:'เปิดช่องที่ปลอดภัยให้ 1 ช่อง',a:1,c:()=>70}];
+function openShop(){show('shop');renderShop()}
+function renderShop(){const b=$('ups');b.innerHTML='';
+ UPS.forEach(o=>{const l=up[o.k]|0,mx=!o.a&&l>=o.max,c=o.c(l);
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div class="ic">'+o.i+'</div><div class="tx"><b>'+o.n+
+   ' <span style="color:#fbbf24">'+(o.a?'x'+l:(o.max==1?(l?'มีแล้ว':'ยังไม่มี'):'Lv'+l+'/'+o.max))+'</span></b><p>'+o.d+'</p></div>';
+  const t=document.createElement('button');t.textContent=mx?'MAX':'🪙 '+c;
+  if(mx)t.disabled=true;else{t.dataset.c=c;t.onclick=()=>{
+   if(coin<c){beep(150,.2,'sawtooth');return toast('เหรียญไม่พอ')}
+   coin-=c;up[o.k]=l+1;ST('coin',coin);ST('up',up);beep(900,.12,'triangle');
+   toast(o.a?'ซื้อแล้ว!':'ปลดล็อกแล้ว!');renderShop()}}
+  d.appendChild(t);b.appendChild(d)});paint()}
+function addCoin(n){n=Math.round(n*(1+up.mu*.25));if(n<=0)return;coin+=n;gain+=n;ST('coin',coin);paint()}
+
+const CL=['','#60a5fa','#4ade80','#fbbf24','#fb7185','#c084fc','#22d3ee','#f472b6','#e6f4ff'];
+let R=9,C=9,M=10,mn=[],op=[],fl=[],lvl=1,gain=0,shield=0,first=true,alive=false,flagMode=false,opened=0;
+function idx(r,c){return r*C+c}
+function around(r,c){const a=[];
+ for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++){
+  if(!x&&!y)continue;const nr=r+y,nc=c+x;
+  if(nr>=0&&nc>=0&&nr<R&&nc<C)a.push([nr,nc])}
+ return a}
+function start(){beep(600,.1,'triangle');lvl=1;gain=0;shield=up.sh|0;alive=true;show('game');build()}
+function build(){C=Math.min(12,8+Math.floor((lvl-1)/2));R=C;
+ M=Math.round(C*C*(.14+lvl*.008));
+ mn=new Array(R*C).fill(0);op=new Array(R*C).fill(0);fl=new Array(R*C).fill(0);
+ first=true;opened=0;flagMode=false;
+ $('bd').style.gridTemplateColumns='repeat('+C+',1fr)';
+ $('bd').style.fontSize=(C>10?11:13)+'px';
+ render();hud()}
+function plant(sr,sc){const safe={};
+ if(up.sf){around(sr,sc).forEach(a=>safe[idx(a[0],a[1])]=1)}
+ safe[idx(sr,sc)]=1;
+ let p=0;while(p<M){const i=Math.random()*R*C|0;
+  if(mn[i]||safe[i])continue;mn[i]=1;p++}}
+function num(r,c){let n=0;around(r,c).forEach(a=>{if(mn[idx(a[0],a[1])])n++});return n}
+function quit(){alive=false;save();show('menu')}
+function hud(){$('hl').textContent=lvl;
+ $('hm').textContent=M-fl.reduce((a,b)=>a+b,0);
+ $('hsh').textContent=shield;$('hg').textContent=gain;
+ $('sb').textContent='🔍 สแกน ('+(up.sc|0)+')';
+ const f=$('fb');f.textContent=flagMode?'🚩 โหมดปักธง':'⛏️ โหมดขุด';
+ f.className='btn'+(flagMode?' on':'')}
+function toggleFlag(){flagMode=!flagMode;beep(700,.05,'triangle');hud()}
+function render(boom){const w=$('bd');w.innerHTML='';
+ for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+  const i=idx(r,c),b=document.createElement('button');
+  if(op[i]){b.className='op'+(mn[i]?' bm':'');
+   if(mn[i])b.textContent='💣';
+   else{const n=num(r,c);if(n){b.textContent=n;b.style.color=CL[n]}}}
+  else if(fl[i])b.textContent='🚩';
+  bindCell(b,r,c);w.appendChild(b)}}
+function bindCell(b,r,c){let lp=null,long=false;
+ const startP=()=>{long=false;lp=setTimeout(()=>{long=true;flag(r,c)},420)};
+ const endP=e=>{clearTimeout(lp);if(!long){if(e)e.preventDefault();
+  flagMode?flag(r,c):dig(r,c)}};
+ b.addEventListener('touchstart',startP,{passive:true});
+ b.addEventListener('touchend',endP);
+ b.addEventListener('mousedown',startP);
+ b.addEventListener('mouseup',endP);
+ b.addEventListener('mouseleave',()=>clearTimeout(lp));
+ b.addEventListener('contextmenu',e=>{e.preventDefault();clearTimeout(lp);flag(r,c)})}
+function flag(r,c){if(!alive)return;const i=idx(r,c);if(op[i])return;
+ fl[i]=fl[i]?0:1;beep(fl[i]?820:400,.06,'triangle');render();hud()}
+function dig(r,c){if(!alive)return;const i=idx(r,c);
+ if(op[i]||fl[i])return;
+ if(first){first=false;plant(r,c)}
+ if(mn[i]){if(shield>0){shield--;fl[i]=1;beep(300,.2,'triangle');
+   toast('🛡️ เกราะช่วยไว้! เหลือ '+shield);render();hud();return}
+  op[i]=1;beep(140,.45,'sawtooth');
+  for(let k=0;k<R*C;k++)if(mn[k])op[k]=1;
+  render();return setTimeout(over,600)}
+ flood(r,c);beep(700,.05,'triangle',.04);
+ addCoin(1);render();hud();
+ if(opened>=R*C-M)setTimeout(clearLv,300)}
+function flood(r,c){const st=[[r,c]];
+ while(st.length){const p=st.pop(),i=idx(p[0],p[1]);
+  if(op[i]||fl[i]||mn[i])continue;
+  op[i]=1;opened++;
+  if(num(p[0],p[1])==0)around(p[0],p[1]).forEach(a=>{
+   if(!op[idx(a[0],a[1])])st.push(a)})}}
+function clearLv(){if(!alive)return;beep(950,.25,'triangle');
+ addCoin(25+lvl*12);
+ if(lvl>best){best=lvl;ST('best',best)}
+ toast('✅ ผ่านด่าน '+lvl+'!');lvl++;build();save()}
+function over(){if(!alive)return;alive=false;
+ $('os').textContent='ด่าน '+lvl;
+ $('ob').textContent='สถิติสูงสุด ด่าน '+best;
+ $('oc').textContent='ได้รับ +'+gain+' 🪙';save();show('over')}
+function useScan(){if(!alive)return;
+ if((up.sc|0)<=0){beep(150,.2,'sawtooth');return toast('ไม่มีเครื่องสแกน')}
+ if(first){toast('เปิดช่องแรกก่อนใช้สแกน');return}
+ const safe=[];
+ for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=idx(r,c);
+  if(!op[i]&&!mn[i]&&!fl[i])safe.push([r,c])}
+ if(!safe.length)return toast('ไม่มีช่องให้สแกน');
+ up.sc--;ST('up',up);beep(1100,.12,'triangle');
+ const p=safe[Math.random()*safe.length|0];
+ flood(p[0],p[1]);render();hud();toast('🔍 พบช่องปลอดภัย');
+ if(opened>=R*C-M)setTimeout(clearLv,300)}
+function save(){ST('coin',coin);ST('up',up);ST('best',best)}
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+addEventListener('beforeunload',save);
+paint();
+</script></body></html>
